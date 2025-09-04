@@ -13,7 +13,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Tome888/rps-online-game-server/issues"
   },
@@ -24,5 +23,5 @@
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
   },
-  // "type": "module"
+  "type": "module"
 }

@@ -1,4 +1,3 @@
-
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -21,31 +20,124 @@ app.use(cors());
 app.use(express.json());
 
 // Basic REST endpoint
-app.get("/", (req, res) => {
-  res.json({ message: "Socket.IO server is running!", id: uuidv4() });
+app.get("/", (_, res) => {
+  res.json({ id: uuidv4() });
 });
 
-// Socket.io connection
+// io.on("connection", (socket) => {
+//   console.log(`🔗 New client connected: ${socket.id}`);
+
+//   socket.on("join_room", ({ roomId }) => {
+//     socket.join(roomId);
+//     console.log(roomId);
+//     console.log(`Socket ${socket.id} joined room ${roomId}`);
+//   });
+
+//   socket.on("game_data", ({ roomId, message }) => {
+//     console.log(`💬 Message received for room ${roomId}:`, message);
+
+//     io.to(roomId).emit("receive_data", {
+//       sender: socket.id,
+//       message,
+//     });
+//   });
+//   socket.on("disconnect", () => {
+//     console.log(`❌ Client disconnected: ${socket.id}`);
+//   });
+// });
+
+// io.on("connection", (socket) => {
+//   console.log(`🔗 New client connected: ${socket.id}`);
+
+//   // Join room event
+//   socket.on("joinRoom", ({ roomId }) => {
+//     const room = io.sockets.adapter.rooms.get(roomId);
+//     const numUsers = room ? room.size : 0;
+
+//     if (numUsers >= 2) {
+//       // Room full, reject
+//       socket.emit("roomFull", { msg: "Room is full!" });
+//       console.log(`Socket ${socket.id} tried to join full room ${roomId}`);
+//       return;
+//     }
+
+//     // Room has space, join
+//     socket.join(roomId);
+//     console.log(`Socket ${socket.id} joined room ${roomId}`);
+
+//     // Emit current users count to the room
+//     const updatedRoom = io.sockets.adapter.rooms.get(roomId);
+//     io.to(roomId).emit("roomUsers", { count: updatedRoom.size });
+//   });
+
+//   // Chat message
+//   socket.on("chatMessage", ({ roomId, message }) => {
+//     console.log(`💬 Message received for room ${roomId}:`, message);
+
+//     // Broadcast to all users in the room except sender
+//     socket.to(roomId).emit("chatMessage", {
+//       id: roomId,
+//       message,
+//     });
+
+//     // Optional: send back to sender too
+//     socket.emit("chatMessage", {
+//       id: roomId,
+//       message,
+//     });
+//   });
+
+//   // Leave room
+//   socket.on("leaveRoom", ({ roomId }) => {
+//     socket.leave(roomId);
+//     console.log(`Socket ${socket.id} left room ${roomId}`);
+
+//     const room = io.sockets.adapter.rooms.get(roomId);
+//     const numUsers = room ? room.size : 0;
+//     io.to(roomId).emit("roomUsers", { count: numUsers });
+//   });
+
+//   // Handle disconnect
+//   socket.on("disconnecting", () => {
+//     for (const roomId of socket.rooms) {
+//       if (roomId !== socket.id) {
+//         const room = io.sockets.adapter.rooms.get(roomId);
+//         const numUsers = room ? room.size - 1 : 0;
+//         io.to(roomId).emit("roomUsers", { count: numUsers });
+//       }
+//     }
+//     console.log(`❌ Client disconnected: ${socket.id}`);
+//   });
+// });
+
+// Start server
+
 io.on("connection", (socket) => {
   console.log(`🔗 New client connected: ${socket.id}`);
 
-  // Example: emit welcome event
-  socket.emit("welcome", { msg: "Hello from server!", id: uuidv4() });
-
-  // Example: listen for messages
-  socket.on("chatMessage", (data) => {
-    console.log("💬 Message received:", data);
-
-    // broadcast to everyone
-    io.emit("chatMessage", { id: uuidv4(), text: data });
+  socket.on("join_room", ({ roomId }) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
+  socket.on("game_data", ({ roomId, message }) => {
+    console.log(`💬 Message for room ${roomId}:`, message);
+
+    // broadcast only to that room
+    io.to(roomId).emit("receive_data", {
+      sender: socket.id,
+      message,
+    });
+  });
+  socket.on("leave_room", ({ roomId }) => {
+    socket.leave(roomId);
+    console.log(`Socket ${socket.id} left room ${roomId}`);
+  });
   socket.on("disconnect", () => {
     console.log(`❌ Client disconnected: ${socket.id}`);
   });
 });
 
-// Start server
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
