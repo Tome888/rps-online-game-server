@@ -19,7 +19,9 @@
   "homepage": "https://github.com/Tome888/rps-online-game-server#readme",
   "dependencies": {
     "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
   },
