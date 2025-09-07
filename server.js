@@ -10,18 +10,18 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 
-// const io = new Server(httpServer, {
-//   cors: {
-//     origin: `${process.env.CLIENT_URL}`,
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//   },
-// });
 const io = new Server(httpServer, {
   cors: {
-    origin: `*`,
+    origin: `${process.env.CLIENT_URL}`,
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
+// const io = new Server(httpServer, {
+//   cors: {
+//     origin: `*`,
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//   },
+// });
 const MAX_ROOM_SIZE = 2;
 const secretKey = "RPS-BY-TOME";
 
@@ -49,30 +49,51 @@ app.post("/join-room/:idR", async (req, res) => {
 io.on("connection", (socket) => {
   // console.log(`🔗 New client connected: ${socket.id}`);
 
+  // socket.on("join_room", ({ roomId }) => {
+  //   const room = io.sockets.adapter.rooms.get(roomId);
+  //   const ids = room ? [...room] : [];
+
+  //   if (ids.length >= MAX_ROOM_SIZE + 1) {
+  //     socket.leave(roomId);
+  //     // console.log(`❌ Room ${roomId} is full`);
+  //     socket.emit("room_full", { roomId });
+  //     return;
+  //   }
+
+  //   socket.join(roomId);
+  //   // console.log(`✅ Socket ${socket.id} joined room ${roomId}`);
+  //   // console.log("Current room members:", [
+  //   //   ...(io.sockets.adapter.rooms.get(roomId) || []),
+  //   // ]);
+
+  //   if (ids.length === MAX_ROOM_SIZE) {
+  //     // console.log(`💪 ROOM IS READY`);
+  //     // Emit to all sockets in this room
+  //     io.to(roomId).emit("room_ready", { roomId });
+  //   }
+  // });
+
   socket.on("join_room", ({ roomId }) => {
     const room = io.sockets.adapter.rooms.get(roomId);
-    const ids = room ? [...room] : [];
+    const currentSize = room ? room.size : 0;
 
-    if (ids.length >= MAX_ROOM_SIZE + 1) {
-      socket.leave(roomId);
-      // console.log(`❌ Room ${roomId} is full`);
+    // ✅ Prevent more than MAX_ROOM_SIZE players
+    if (currentSize >= MAX_ROOM_SIZE) {
       socket.emit("room_full", { roomId });
       return;
     }
 
+    // ✅ Join the room
     socket.join(roomId);
-    // console.log(`✅ Socket ${socket.id} joined room ${roomId}`);
-    // console.log("Current room members:", [
-    //   ...(io.sockets.adapter.rooms.get(roomId) || []),
-    // ]);
 
-    if (ids.length === MAX_ROOM_SIZE) {
-      // console.log(`💪 ROOM IS READY`);
-      // Emit to all sockets in this room
+    const updatedRoom = io.sockets.adapter.rooms.get(roomId);
+    const updatedSize = updatedRoom ? updatedRoom.size : 0;
+
+    // ✅ Fire "room_ready" when room reaches exactly MAX_ROOM_SIZE
+    if (updatedSize === MAX_ROOM_SIZE) {
       io.to(roomId).emit("room_ready", { roomId });
     }
   });
-
   socket.on("game_data", ({ roomId, message }) => {
     console.log(`💬 Message for room ${roomId}:`, message);
 
